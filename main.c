@@ -18,64 +18,59 @@ GRegex          *rx_name = NULL;
 GRegex          *rx_path = NULL;
 GRegex          *rx_replace = NULL;
 GRegex          *rx_split = NULL;
+GRegex          *rx_e23 = NULL;
+#ifdef WIN_32
+GRegex          *rx_e20 = NULL;
+GRegex          *rx_e60 = NULL;
+GRegex          *rx_e5E = NULL;
+GRegex          *rx_e7B = NULL;
+GRegex          *rx_e7D = NULL;
+GRegex          *rx_e5B = NULL;
+GRegex          *rx_e5D = NULL;
+GRegex          *rx_e25 = NULL;
+#else
+GRegex          *rx_e40 = NULL;
+GRegex          *rx_e3F = NULL;
+GRegex          *rx_ep = NULL;
+#endif
+gint            sort_id;
+GtkSortType     sort_order;
 
-//int g_rename(const gchar *oldfilename, const gchar *newfilename);
 void destroy(void);
 
 /* ************************************************************************ *
  * UTILITY FUNCTIONS
  * ************************************************************************ */
-gchar *replace_str(gchar *str, const gchar *orig, const gchar *rep)
+void enable_sorting(gboolean enable)
 {
-    if (orig == NULL || rep == NULL || str == NULL) return NULL;
-    if (strlen(orig) == 0 || strlen(rep) == 0 || strlen(str) == 0) return NULL;
-    if (strstr(str, orig) == NULL) return str;
-
-    gchar *replaced = (char*)calloc(1, 1), *temp = NULL;
-    gchar *p = str, *p3 = str, *p2 = NULL;
-
-    while ( (p = strstr(p, orig)) != NULL) {
-        temp = realloc(replaced, strlen(replaced) + (p - p3) + strlen(rep));
-        if (temp == NULL) {
-            free(replaced);
-            return NULL;
-        }
-        replaced = temp;
-        strncat(replaced, p - (p - p3), p - p3);
-        strcat(replaced, rep);
-        p3 = p + strlen(orig);
-        p += strlen(orig);
-        p2 = p;
+    if (enable) {
+        gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), sort_id, sort_order);
+    } else {
+        gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(store), &sort_id, &sort_order);
+        gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID, GTK_SORT_ASCENDING);
     }
-
-    if (p2 != NULL && strlen(p2) > 0) {
-        temp = realloc(replaced, strlen(replaced) + strlen(p2) + 1);
-        if (temp == NULL) {
-            free(replaced);
-            return NULL;
-        }
-        replaced = temp;
-        strcat(replaced, p2);
-    }
-    return replaced;
 }
 
-#ifdef WIN_32
 gchar *process_entities(gchar *str)
 {
     gchar *buffer = str;
-    buffer = replace_str(buffer, "%20", " ");
-    buffer = replace_str(buffer, "%60", "`");
-    buffer = replace_str(buffer, "%23", "#");
-    buffer = replace_str(buffer, "%5E", "^");
-    buffer = replace_str(buffer, "%7B", "{");
-    buffer = replace_str(buffer, "%7D", "}");
-    buffer = replace_str(buffer, "%5B", "[");
-    buffer = replace_str(buffer, "%5D", "]");
-    buffer = replace_str(buffer, "%25", "%");
+    buffer = g_regex_replace_literal(rx_e23, buffer, -1, 0, "#", 0, NULL);
+#ifdef WIN_32
+    buffer = g_regex_replace_literal(rx_e20, buffer, -1, 0, " ", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e60, buffer, -1, 0, "`", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e5E, buffer, -1, 0, "^", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e7B, buffer, -1, 0, "{", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e7D, buffer, -1, 0, "}", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e5B, buffer, -1, 0, "[", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e5D, buffer, -1, 0, "]", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e25, buffer, -1, 0, "%", 0, NULL);
+#else
+    buffer = g_regex_replace_literal(rx_e40, buffer, -1, 0, "@", 0, NULL);
+    buffer = g_regex_replace_literal(rx_e3F, buffer, -1, 0, "?", 0, NULL);
+    buffer = g_regex_replace_literal(rx_ep, buffer, -1, 0, "%", 0, NULL);
+#endif
     return buffer;
 }
-#endif
 
 /* ************************************************************************ *
  * POPULATING THE LIST (DRAG-N-DROP)
@@ -88,11 +83,12 @@ void view_onDragDataReceived(GtkWidget *wgt, GdkDragContext *context, int x, int
     gchar        *input     = NULL;
     int          index      = 0;
 
+    gtk_tree_view_set_model(GTK_TREE_VIEW(list), NULL);
+    enable_sorting(FALSE);
     while (strings[index] != NULL && strcmp(strings[index], "") != 0)
     {
         input = strings[index];
         gtk_list_store_append(GTK_LIST_STORE(store), &iter);
-#ifdef WIN_32
         gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_NAME,
             process_entities( g_regex_replace(rx_name,
                                         input,
@@ -105,14 +101,10 @@ void view_onDragDataReceived(GtkWidget *wgt, GdkDragContext *context, int x, int
                                         strlen(input),
                                         0, "\\1", 0,
                                         NULL) ), -1);
-#else
-        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_NAME,
-            g_regex_replace(rx_name, input, strlen(input), 0, "\\1", 0, NULL), -1);
-        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_PATH,
-            g_regex_replace(rx_path, input, strlen(input), 0, "\\1", 0, NULL), -1);
-#endif
         ++index;
     }
+    enable_sorting(TRUE);
+    gtk_tree_view_set_model(GTK_TREE_VIEW(list), GTK_TREE_MODEL(store));
 }
 
 /* ************************************************************************ *
@@ -175,13 +167,8 @@ gboolean rename_foreach (GtkTreeModel *model,
     gtk_tree_model_get (model, iter, COL_NAME, &_name, -1);
     gtk_tree_model_get (model, iter, COL_PATH, &_path, -1);
 
-    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox))) {
-        _name2 = g_regex_replace(rx_replace, _name, strlen(_name), 0,
+    _name2 = g_regex_replace(rx_replace, _name, strlen(_name), 0,
                              gtk_entry_get_text(GTK_ENTRY(entry_replace)), 0, NULL);
-    } else {
-        _name2 = replace_str(_name, (gchar*) gtk_entry_get_text(GTK_ENTRY(entry_search)),
-                             (gchar*) gtk_entry_get_text(GTK_ENTRY(entry_replace)));
-    }
 
     if (g_rename(g_strconcat(_path, _name, NULL), g_strconcat(_path, _name2, NULL)) == 0)
     { gtk_list_store_set (store, iter, COL_NAME, _name2, -1); }
@@ -191,11 +178,19 @@ gboolean rename_foreach (GtkTreeModel *model,
 
 void search_and_replace(void)
 {
-    rx_replace = g_regex_new(gtk_entry_get_text(GTK_ENTRY(entry_search)), G_REGEX_OPTIMIZE, 0, NULL);
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(checkbox))) {
+        rx_replace = g_regex_new( gtk_entry_get_text(GTK_ENTRY(entry_search)), G_REGEX_OPTIMIZE, 0, NULL );
+    } else {
+        rx_replace = g_regex_new( g_regex_escape_string(gtk_entry_get_text(GTK_ENTRY(entry_search)), -1), G_REGEX_OPTIMIZE, 0, NULL);
+    }
 
+    gtk_tree_view_set_model(GTK_TREE_VIEW(list), NULL);
+    enable_sorting(FALSE);
     gtk_tree_model_foreach(GTK_TREE_MODEL(store),
-                           (GtkTreeModelForeachFunc) rename_foreach,
-                           NULL);
+                            (GtkTreeModelForeachFunc) rename_foreach,
+                            NULL);
+    enable_sorting(TRUE);
+    gtk_tree_view_set_model(GTK_TREE_VIEW(list), GTK_TREE_MODEL(store));
 
     gtk_tree_view_columns_autosize(GTK_TREE_VIEW(list));
 }
@@ -228,6 +223,21 @@ void destroy(void)
     g_regex_unref(rx_split);
     if (rx_replace != NULL)
         g_regex_unref(rx_replace);
+    g_regex_unref(rx_e23);
+#ifdef WIN_32
+    g_regex_unref(rx_e20);
+    g_regex_unref(rx_e60);
+    g_regex_unref(rx_e5E);
+    g_regex_unref(rx_e7B);
+    g_regex_unref(rx_e7D);
+    g_regex_unref(rx_e5B);
+    g_regex_unref(rx_e5D);
+    g_regex_unref(rx_e25);
+#else
+    g_regex_unref(rx_e40);
+    g_regex_unref(rx_e3F);
+    g_regex_unref(rx_ep);
+#endif
     gtk_main_quit();
 }
 
@@ -307,7 +317,7 @@ int main (int argc, char *argv[])
     win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size(GTK_WINDOW(win), 500, 380);
     gtk_container_set_border_width (GTK_CONTAINER (win), 8);
-    gtk_window_set_title (GTK_WINDOW (win), "Multi-File Renamer - v1.1.4"); /* Jul / 27 / 2008 */
+    gtk_window_set_title (GTK_WINDOW (win), "Multi-File Renamer - v1.2"); /* Aug / 05 / 2008 */
     gtk_window_set_position (GTK_WINDOW (win), GTK_WIN_POS_NONE);
     gtk_widget_realize (win);
     g_signal_connect (win, "destroy", destroy, NULL);
@@ -326,6 +336,8 @@ int main (int argc, char *argv[])
 
     list = create_view_and_model();
     gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(list)), GTK_SELECTION_MULTIPLE);
+    gtk_tree_view_column_set_sort_column_id( gtk_tree_view_get_column(GTK_TREE_VIEW(list), COL_NAME), 0 );
+    gtk_tree_view_column_set_sort_column_id( gtk_tree_view_get_column(GTK_TREE_VIEW(list), COL_PATH), 1 );
     gtk_container_add(GTK_CONTAINER(scroll), list);
 
     /* Second / Third rows of the Form */
@@ -367,11 +379,23 @@ int main (int argc, char *argv[])
 #ifdef WIN_32
     rx_name = g_regex_new(".*/([^/\r]+)\r?$", G_REGEX_OPTIMIZE, 0, NULL);
     rx_path = g_regex_new("file:///(.*?/)[^/]+$", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e20 = g_regex_new("%20", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e60 = g_regex_new("%60", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e5E = g_regex_new("%5E", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e7B = g_regex_new("%7B", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e7D = g_regex_new("%7D", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e5B = g_regex_new("%5B", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e5D = g_regex_new("%5D", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e25 = g_regex_new("%25", G_REGEX_OPTIMIZE, 0, NULL);
 #else
     rx_name = g_regex_new(".*/([^/]+)$", G_REGEX_OPTIMIZE, 0, NULL);
     rx_path = g_regex_new("file://(.*?/)[^/]+$", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e40 = g_regex_new("%40", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e3F = g_regex_new("%3F", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_ep = g_regex_new("%%", G_REGEX_OPTIMIZE, 0, NULL);
 #endif
     rx_split = g_regex_new("\n", G_REGEX_OPTIMIZE, 0, NULL);
+    rx_e23 = g_regex_new("%23", G_REGEX_OPTIMIZE, 0, NULL);
 
     /* Enter the main loop */
     gtk_widget_show_all (win);
