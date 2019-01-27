@@ -17,29 +17,29 @@ class QTableWidget;
 
 class cRenamerWindow : public QWidget
 {
-    Q_OBJECT
+	Q_OBJECT
 
 public:
-    cRenamerWindow();
+	cRenamerWindow();
 
 public slots:
-    void replace();
+	void replace();
 
 protected:
-    void keyPressEvent(QKeyEvent *event);
+	void keyPressEvent(QKeyEvent *event);
 
 private:
-    cListWidget *lstFiles;
-    QCheckBox *ckbRegex;
-    QGridLayout *layMain;
-    QHBoxLayout *layBtns;
-    QLabel *lblReplace;
-    QLabel *lblSearch;
-    QLabel *lblStatus;
-    QLineEdit *txtReplace;
-    QLineEdit *txtSearch;
-    QPushButton *btnClear;
-    QPushButton *btnReplace;
+	cListWidget *lstFiles;
+	QCheckBox *ckbRegex;
+	QGridLayout *layMain;
+	QHBoxLayout *layBtns;
+	QLabel *lblReplace;
+	QLabel *lblSearch;
+	QLabel *lblStatus;
+	QLineEdit *txtReplace;
+	QLineEdit *txtSearch;
+	QPushButton *btnClear;
+	QPushButton *btnReplace;
 };
 
 #endif // RENAMERWINDOW_H
