@@ -2,18 +2,15 @@
 #define RENAMERWINDOW_H
 
 #include <QWidget>
-#include "listwidget.h"
-
-class cListWidget;
+#include "listWidget.h"
+//#include "logWindow.h"
+#include "messageWidget.h"
 
 class QCheckBox;
-class QDialogButtonBox;
 class QGridLayout;
 class QHBoxLayout;
 class QLabel;
-class QMimeData;
 class QPushButton;
-class QTableWidget;
 
 class cRenamerWindow : public QWidget
 {
@@ -21,21 +18,22 @@ class cRenamerWindow : public QWidget
 
 public:
 	cRenamerWindow();
+	~cRenamerWindow();
 
 public slots:
 	void replace();
 
-protected:
-	void keyPressEvent(QKeyEvent *event);
-
 private:
+	void keyPressEvent(QKeyEvent *_event);
+
 	cListWidget *lstFiles;
+	//cLogWindow *logWin;
+	cMessageWidget *lblStatus;
 	QCheckBox *ckbRegex;
 	QGridLayout *layMain;
 	QHBoxLayout *layBtns;
 	QLabel *lblReplace;
 	QLabel *lblSearch;
-	QLabel *lblStatus;
 	QLineEdit *txtReplace;
 	QLineEdit *txtSearch;
 	QPushButton *btnClear;

@@ -1,9 +1,8 @@
 #include <QApplication>
 
-#include "renamerwindow.h"
+#include "renamerWindow.h"
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	QApplication app(argc, argv);
 	cRenamerWindow window;
 	window.show();

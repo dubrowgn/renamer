@@ -1,9 +1,7 @@
 #include <QtGui>
+#include "renamerWindow.h"
 
-#include "renamerwindow.h"
-
-cRenamerWindow::cRenamerWindow()
-{
+cRenamerWindow::cRenamerWindow() {
 	lstFiles = new cListWidget;
 	ckbRegex = new QCheckBox(tr("Use Regex"));
 	ckbRegex->setChecked(true);
@@ -11,8 +9,8 @@ cRenamerWindow::cRenamerWindow()
 	layBtns = new QHBoxLayout;
 	lblReplace = new QLabel(tr("Replace:"));
 	lblSearch = new QLabel(tr("Search:"));
-	lblStatus = new QLabel(tr("Drag and drop files/folders into the area above"
-							  " to add them to your selection."));
+	lblStatus = new cMessageWidget(tr("Drag and drop files/folders into the area "
+									  "above to add them to your selection."));
 	lblStatus->setWordWrap(true);
 	lblStatus->setAlignment(Qt::AlignHCenter);
 	txtReplace = new QLineEdit;
@@ -39,12 +37,34 @@ cRenamerWindow::cRenamerWindow()
 	layMain->addLayout(layBtns, 4, 0, 1, 2);
 
 	setLayout(layMain);
-	setWindowTitle(tr("Multi-File Renamer - v1.3.1"));
+	setWindowTitle(tr("Multi-File Renamer - v1.3.2"));
 	this->resize(600, 420);
-}
 
-void cRenamerWindow::replace()
-{
+	//logWin = new cLogWindow;
+} // cRenamerWindow( void )
+
+cRenamerWindow::~cRenamerWindow() {
+	// clean-up widgets
+	delete btnClear;
+	delete btnReplace;
+	delete ckbRegex;
+	delete lblReplace;
+	delete lblSearch;
+	delete lblStatus;
+	delete lstFiles;
+	delete txtReplace;
+	delete txtSearch;
+
+	// clean-up layouts
+	delete layBtns;
+	delete layMain;
+
+	// clean-up children windows
+	//logWin->close();
+	//delete logWin;
+} // ~cRenamerWindow( void )
+
+void cRenamerWindow::replace() {
 	QRegExp rxReplace(txtSearch->text(), Qt::CaseSensitive, QRegExp::RegExp);
 	if (!ckbRegex->checkState())
 		rxReplace.setPatternSyntax(QRegExp::FixedString);
@@ -69,22 +89,23 @@ void cRenamerWindow::replace()
 			lstFiles->item(i, 0)->setText(name2); // also check if flagged for errors?
 		else {
 			++errors;
-			// set error color/status
-		} // if / else
+			// set error color/status (?)
+		} // if/else
 	} // for
-	if (errors > 0)
-		lblStatus->setText(tr("There were unspecified errors durring the rename"
-							  " process."));
-	else
-		lblStatus->setText(tr("Rename operation completed successfully."));
+	if (errors > 0) {
+		lblStatus->showMessage(tr("There were errors durring the rename process!\n"
+								  "Please check the error log for more details."));
+		//logWin->show();
+	} else {
+		lblStatus->showMessage(tr("Rename operation completed successfully."));
+	} // if/else
 	lstFiles->resizeColumnsToContents();
 	lstFiles->resizeRowsToContents();
 	lstFiles->horizontalHeader()->setStretchLastSection(true);
-}
+} // replace( void )
 
-void cRenamerWindow::keyPressEvent(QKeyEvent *event)
-{
-	switch (event->key()) {
+void cRenamerWindow::keyPressEvent(QKeyEvent *_event) {
+	switch (_event->key()) {
 		case Qt::Key_Enter: // enter key on number pad
 		case Qt::Key_Return: // main enter/return key
 			replace();
@@ -98,5 +119,5 @@ void cRenamerWindow::keyPressEvent(QKeyEvent *event)
 		default:
 			return;
 	} // switch
-	event->accept();
-}
+	_event->accept();
+} // keyPressEvent( QKeyEvent )

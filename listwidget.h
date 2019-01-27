@@ -11,18 +11,18 @@ class cListWidget : public QTableWidget
 
 public:
 	cListWidget(QWidget *parent = 0);
+	~cListWidget();
 
 public slots:
 	void removeAll();
 	void removeSelected();
 
-protected:
+private:
 	void dragEnterEvent(QDragEnterEvent *event);
 	void dragMoveEvent(QDragMoveEvent *event);
 	void dragLeaveEvent(QDragLeaveEvent *event);
 	void dropEvent(QDropEvent *event);
 
-private:
 	QRegExp *rxPath;
 };
 

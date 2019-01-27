@@ -1,9 +1,11 @@
 #include <QtGui>
 
-#include "listwidget.h"
+#include "listWidget.h"
 
 cListWidget::cListWidget(QWidget *parent) : QTableWidget(parent)
 {
+	this->setFocusPolicy(Qt::StrongFocus);
+
 #ifdef Q_OS_WIN32
 	rxPath = new QRegExp(tr("^/(.*/)([^/]+)$"));
 #else
@@ -29,6 +31,11 @@ cListWidget::cListWidget(QWidget *parent) : QTableWidget(parent)
 	horizontalHeader()->setStretchLastSection(true);
 	resizeColumnsToContents();
 	verticalHeader()->hide();
+}
+
+cListWidget::~cListWidget()
+{
+	delete rxPath;
 }
 
 void cListWidget::removeAll()
