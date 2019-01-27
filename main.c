@@ -1,5 +1,7 @@
 #include <gtk/gtk.h>
+#include <glib/gstdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 enum {
   COL_NAME = 0,
@@ -17,30 +19,63 @@ GRegex          *rx_path = NULL;
 GRegex          *rx_replace = NULL;
 GRegex          *rx_split = NULL;
 
-int g_rename(const gchar *oldfilename, const gchar *newfilename);
+//int g_rename(const gchar *oldfilename, const gchar *newfilename);
 void destroy(void);
 
 /* ************************************************************************ *
  * UTILITY FUNCTIONS
  * ************************************************************************ */
-gchar *replace_str(gchar *str, gchar *orig, gchar *rep)
+gchar *replace_str(gchar *str, const gchar *orig, const gchar *rep)
 {
-    static gchar buffer[4096];
-    gchar *p;
+    if (orig == NULL || rep == NULL || str == NULL) return NULL;
+    if (strlen(orig) == 0 || strlen(rep) == 0 || strlen(str) == 0) return NULL;
+    if (strstr(str, orig) == NULL) return str;
 
-    strncpy(buffer, str, strlen(str));
-    buffer[strlen(str)] = '\0';
+    gchar *replaced = (char*)calloc(1, 1), *temp = NULL;
+    gchar *p = str, *p3 = str, *p2 = NULL;
 
-    while((p = strstr(str, orig)))  // Is 'orig' even in 'str'?
-    {
-        strncpy(buffer, str, p-str); // Copy characters from 'str' start to 'orig' st$
-        buffer[p-str] = '\0';
-
-        sprintf(buffer+(p-str), "%s%s", rep, p+strlen(orig));
-        str = buffer;
+    while ( (p = strstr(p, orig)) != NULL) {
+        temp = realloc(replaced, strlen(replaced) + (p - p3) + strlen(rep));
+        if (temp == NULL) {
+            free(replaced);
+            return NULL;
+        }
+        replaced = temp;
+        strncat(replaced, p - (p - p3), p - p3);
+        strcat(replaced, rep);
+        p3 = p + strlen(orig);
+        p += strlen(orig);
+        p2 = p;
     }
-    return str;
+
+    if (p2 != NULL && strlen(p2) > 0) {
+        temp = realloc(replaced, strlen(replaced) + strlen(p2) + 1);
+        if (temp == NULL) {
+            free(replaced);
+            return NULL;
+        }
+        replaced = temp;
+        strcat(replaced, p2);
+    }
+    return replaced;
 }
+
+#ifdef WIN_32
+gchar *process_entities(gchar *str)
+{
+    gchar *buffer = str;
+    buffer = replace_str(buffer, "%20", " ");
+    buffer = replace_str(buffer, "%60", "`");
+    buffer = replace_str(buffer, "%23", "#");
+    buffer = replace_str(buffer, "%5E", "^");
+    buffer = replace_str(buffer, "%7B", "{");
+    buffer = replace_str(buffer, "%7D", "}");
+    buffer = replace_str(buffer, "%5B", "[");
+    buffer = replace_str(buffer, "%5D", "]");
+    buffer = replace_str(buffer, "%25", "%");
+    return buffer;
+}
+#endif
 
 /* ************************************************************************ *
  * POPULATING THE LIST (DRAG-N-DROP)
@@ -57,16 +92,22 @@ void view_onDragDataReceived(GtkWidget *wgt, GdkDragContext *context, int x, int
     {
         input = strings[index];
         gtk_list_store_append(GTK_LIST_STORE(store), &iter);
-        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_NAME,
-            g_regex_replace(rx_name, input, strlen(input), 0, "\\1", 0, NULL), -1);
 #ifdef WIN_32
-        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_PATH,
-            replace_str(g_regex_replace(rx_path,
+        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_NAME,
+            process_entities( g_regex_replace(rx_name,
                                         input,
                                         strlen(input),
                                         0, "\\1", 0,
-                                        NULL), "%20", " "), -1);
+                                        NULL) ), -1);
+        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_PATH,
+            process_entities( g_regex_replace(rx_path,
+                                        input,
+                                        strlen(input),
+                                        0, "\\1", 0,
+                                        NULL) ), -1);
 #else
+        gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_NAME,
+            g_regex_replace(rx_name, input, strlen(input), 0, "\\1", 0, NULL), -1);
         gtk_list_store_set(GTK_LIST_STORE(store), &iter, COL_PATH,
             g_regex_replace(rx_path, input, strlen(input), 0, "\\1", 0, NULL), -1);
 #endif
@@ -266,7 +307,7 @@ int main (int argc, char *argv[])
     win = gtk_window_new (GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size(GTK_WINDOW(win), 500, 380);
     gtk_container_set_border_width (GTK_CONTAINER (win), 8);
-    gtk_window_set_title (GTK_WINDOW (win), "Multi-File Renamer - v1.1.2"); /* Jul / 20 / 2008 */
+    gtk_window_set_title (GTK_WINDOW (win), "Multi-File Renamer - v1.1.4"); /* Jul / 27 / 2008 */
     gtk_window_set_position (GTK_WINDOW (win), GTK_WIN_POS_NONE);
     gtk_widget_realize (win);
     g_signal_connect (win, "destroy", destroy, NULL);
