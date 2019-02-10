@@ -1,10 +1,12 @@
-#include <QApplication>
+#include "renamer-window.h"
+#include "QApplication"
 
-#include "renamerWindow.h"
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
 
-int main(int argc, char *argv[]) {
-	QApplication app(argc, argv);
-	cRenamerWindow window;
-	window.show();
-	return app.exec();
+    RenamerWindow w;
+    w.show();
+
+    return a.exec();
 }
