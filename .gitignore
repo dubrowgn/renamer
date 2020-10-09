@@ -1,3 +1,6 @@
+pkg/usr/local/bin/*
+*.deb
+
 # C++ objects and libs
 *.slo
 *.lo

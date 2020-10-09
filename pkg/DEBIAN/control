@@ -1,0 +1,9 @@
+Package: renamer
+Version: 1.4.0-0
+Maintainer: Dustin Brown <me@dubrowgn.com>
+Description: A lightweight, mass file renaming utility
+Section: misc
+Priority: optional
+Architecture: amd64
+Depends: libqt5gui5
+Homepage: https://github.com/dubrowgn/renamer
